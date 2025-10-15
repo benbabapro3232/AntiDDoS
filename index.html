@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-DDoS Güvenlik Sitesi</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ 'unsafe-inline'; connect-src 'self' https://YOUR_RENDER_API_URL;">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; margin: 0; padding: 20px; }
+        h1 { color: #2c3e50; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        button { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        #result { margin-top: 10px; color: green; }
+        .error { color: red; }
+    </style>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ Güvenlik Test Sitesi</h1>
+        <p>Metni gir, DLL ile hash hesapla! (Roblox için değil, genel güvenlik testi)</p>
+        <form id="hashForm">
+            <label>Metin: <input type="text" id="inputText" required></label><br><br>
+            <div class="g-recaptcha" data-sitekey="6LduousrAAAAAJciuS3zb1tnNKegM5dzG1atruPa"></div>
+            <button type="submit" id="submitBtn">Hesapla</button>
+            <div id="result"></div>
+        </form>
+        <h2>İpuçları:</h2>
+        <ul style="text-align: left;">
+            <li>Vercel ile DDoS koruması: Otomatik rate limiting.</li>
+            <li>Cloudflare ekle: Ücretsiz WAF.</li>
+            <li>Şifre saklama: Asla .txt kullanma, bcrypt önerilir.</li>
+        </ul>
+    </div>
+
+    <script>
+        let lastClick = 0;
+        const rateLimitMs = 5000; // 5 saniye rate limit
+
+        document.getElementById('hashForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const now = Date.now();
+            if (now - lastClick < rateLimitMs) {
+                document.getElementById('result').innerText = 'Çok hızlı! 5 saniye bekle.';
+                document.getElementById('result').className = 'error';
+                return;
+            }
+            lastClick = now;
+
+            if (!grecaptcha.getResponse()) {
+                document.getElementById('result').innerText = 'Lütfen CAPTCHA’yı doğrulayın!';
+                document.getElementById('result').className = 'error';
+                return;
+            }
+
+            const input = document.getElementById('inputText').value;
+            try {
+                const response = await fetch('https://api.render.com/v1', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    document.getElementById('result').innerText = `Hata: ${data.error}`;
+                    document.getElementById('result').className = 'error';
+                } else {
+                    document.getElementById('result').innerText = `Hash: ${data.hash}`;
+                    document.getElementById('result').className = '';
+                }
+            } catch (err) {
+                document.getElementById('result').innerText = 'API bağlantı hatası!';
+                document.getElementById('result').className = 'error';
+            }
+        });
+    </script>
+</body>
+</html>
